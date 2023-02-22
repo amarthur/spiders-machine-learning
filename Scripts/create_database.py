@@ -68,7 +68,6 @@ class Database:
         if print_info:
             self.print_info(info)
 
-        # Class distribution plot
         if plot_graph:
             self.plot_distribution_graph(df)
 
@@ -166,20 +165,16 @@ class Database:
     @staticmethod
     def print_info(info):
         print("\nInfo:")
-        for k, v in info.items():
-            print(f"{k}: {v}")
+        for info_description, info_value in info.items():
+            print(f"{info_description}: {info_value}")
         print()
 
     @staticmethod
     def create_directory(dir_location):
-        # Create missing parents as needed
-        # Don't raise errors if the directory already exists
         Path(dir_location).mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def save_img_from_url(url, img_location):
-        # Try to download image
-        # If not successful, pause a little before trying again
         for attempt in range(3):
             try:
                 urllib.request.urlretrieve(url, img_location)
@@ -192,8 +187,6 @@ class Database:
 
     @staticmethod
     def check_image(image):
-        # Check if image can be opened
-        # Verify if image is not broken
         try:
             with Image.open(image) as img:
                 img.verify()
