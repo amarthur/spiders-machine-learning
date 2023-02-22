@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import splitfolders
 from PIL import Image
+from tqdm import tqdm
 
 
 class Database:
@@ -34,7 +35,7 @@ class Database:
         self.scientific_name = "scientific_name"
         self.plot_name = "distribution.png"
 
-    def create_database(self, print_info=False, plot_graph=False, n_cpus=cpu_count()):
+    def create_database(self, check_images=True, print_info=False, plot_graph=False, n_cpus=cpu_count()):
         # Info dict
         info = {}
 
@@ -63,13 +64,9 @@ class Database:
         self.save_images(species_groups, n_cpus)
         print("Finished downloading images.\n")
 
-        print("Checking images...")
-        self.check_images()
-        print("Finished checking images.\n")
+        if check_images:
+            self.check_images()
 
-        print("Finished creating database.\n")
-
-        # Info
         if print_info:
             self.print_info(info)
 
@@ -130,9 +127,9 @@ class Database:
                 self.save_img_from_url(url=urls[i], img_location=img_location)
 
     def check_images(self):
-        for img_dir in self.database_path.iterdir():
-            for img in img_dir.iterdir():
-                self.check_image(img)
+        images = [img for img_dir in self.database_path.iterdir() for img in img_dir.iterdir()]
+        for image in tqdm(images, desc="Checking images", unit=" Images"):
+            self.check_image(image)
 
     def split_dataset(self,
                       dataset_name="Dataset",
@@ -208,8 +205,8 @@ class Database:
             with Image.open(image) as img:
                 img.verify()
         except Exception as e:
-            print(f"Image '{image.name}': {e}")
-            print(f"Removed '{image.name}'")
+            print(f"Image '{image}': {e}")
+            print(f"Removed '{image}'")
             Path.unlink(image)
 
 
