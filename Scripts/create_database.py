@@ -45,7 +45,11 @@ class Database:
 
         # Remove missing values
         df = df.dropna()
-        info['drop_na_imgs'] = len(df)
+        info["Nº imgs after removing missing values"] = len(df)
+
+        # Remove invalid formats
+        valid_img_formats = [".png", ".jpg", ".jpeg"]
+        df = df[df[self.img_url].apply(lambda x: Path(x).suffix.lower() in valid_img_formats)]
 
         # Remove species below threshold
         df = df.groupby(self.scientific_name).filter(lambda x: len(x) >= self.imgs_threshold)
@@ -104,7 +108,6 @@ class Database:
 
     def download_images(self, species_group, start, end):
         species_group = species_group.reset_index()  # Reset index to access rows sequentially
-        valid_img_formats = {".png", ".jpg", ".jpeg"}
 
         # Group columns
         ids = species_group[self.id]
@@ -113,12 +116,8 @@ class Database:
         species_image_file_name = species_name.replace(" ", "_").lower()
 
         for i in range(start, end):
-            # Check file extension
-            file_ext = Path(urls[i]).suffix
-            if file_ext.lower() not in valid_img_formats:
-                continue
-
             # Give each image a name
+            file_ext = Path(urls[i]).suffix
             img_name = f"{species_image_file_name}_{i}_{ids[i]}" + file_ext
             img_location = self.database_path / species_name / img_name
 
