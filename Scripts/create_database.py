@@ -53,8 +53,20 @@ class Database:
         # Create the database
         species_index = sorted(df[self.scientific_name].unique())
         species_groups = df.groupby(self.scientific_name)
+
+        print("Creating directories...")
         self.create_species_directories(species_index)
+        print("Finished creating directories.\n")
+
+        print("Downloading images...")
         self.save_images(species_groups, n_cpus)
+        print("Finished downloading images.\n")
+
+        print("Checking images...")
+        self.check_images()
+        print("Finished checking images.\n")
+
+        print("Finished creating database.\n")
 
         # Info
         if print_info:
@@ -96,8 +108,6 @@ class Database:
         for process in processes:
             process.join()
 
-        print("Finished downloading images.")
-
     def download_images(self, species_group, start, end):
         species_group = species_group.reset_index()  # Reset index to access rows sequentially
         valid_img_formats = {".png", ".jpg", ".jpeg"}
@@ -126,7 +136,6 @@ class Database:
         for img_dir in self.database_path.iterdir():
             for img in img_dir.iterdir():
                 self.check_image(img)
-        print("Checked all images.")
 
     def split_dataset(self,
                       dataset_name="Dataset",
