@@ -1,3 +1,4 @@
+import itertools
 import time
 import urllib.request
 from multiprocessing import Process, cpu_count
@@ -119,37 +120,9 @@ class Database:
                 self.save_img_from_url(url=urls[i], img_location=img_location)
 
     def check_images(self):
-        images = [img for img_dir in self.database_path.iterdir() for img in img_dir.iterdir()]
-        for image in tqdm(images, desc="Checking images", unit=" images"):
-            self.check_image(image)
-
-    def split_dataset(self,
-                      dataset_name="Dataset",
-                      ratio_split=None,
-                      fixed_split=None,
-                      oversample=False,
-                      split_seed=1337,
-                      move=False):
-        """ Split image database into Train/Validation/(Test) using 'splitfolders' package"""
-        input_path = self.database_path
-        output_path = self.main_folder / dataset_name
-
-        if ratio_split is not None:
-            splitfolders.ratio(input=input_path,
-                               output=output_path,
-                               seed=split_seed,
-                               ratio=ratio_split,
-                               group_prefix=None,
-                               move=move)
-
-        elif fixed_split is not None:
-            splitfolders.fixed(input=input_path,
-                               output=output_path,
-                               seed=split_seed,
-                               fixed=fixed_split,
-                               oversample=oversample,
-                               group_prefix=None,
-                               move=move)
+        images = list(itertools.chain.from_iterable(self.dirs.database_dict().values()))
+        for img in tqdm(images, desc="Checking images", unit=" images"):
+            self.check_image(img)
 
     def plot_distribution_graph(self, df):
         species_distribution = df[self.scientific_name].value_counts().sort_values(ascending=False)
@@ -199,7 +172,6 @@ class Database:
 def main():
     db = Database(csv_file="spiders.csv", imgs_threshold=100)
     db.create_database(check_images=True, print_info=True, plot_graph=False)
-    db.split_dataset(fixed_split=60, oversample=False, split_seed=17823)
 
 
 if __name__ == "__main__":
