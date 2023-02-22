@@ -127,7 +127,7 @@ class Database:
 
     def check_images(self):
         images = [img for img_dir in self.database_path.iterdir() for img in img_dir.iterdir()]
-        for image in tqdm(images, desc="Checking images", unit=" Images"):
+        for image in tqdm(images, desc="Checking images", unit=" images"):
             self.check_image(image)
 
     def split_dataset(self,
@@ -211,7 +211,7 @@ class Database:
 
 def main():
     db = Database(csv_file="spiders.csv", imgs_threshold=100)
-    db.create_database(print_info=False, plot_graph=False)
+    db.create_database(check_images=True, print_info=True, plot_graph=False)
     db.split_dataset(fixed_split=60, oversample=False, split_seed=17823)
 
 
