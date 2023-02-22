@@ -92,6 +92,12 @@ class Database:
         for process in processes:
             process.start()
 
+        # Join processes
+        for process in processes:
+            process.join()
+
+        print("Finished downloading images.")
+
     def download_images(self, species_group, start, end):
         species_group = species_group.reset_index()  # Reset index to access rows sequentially
         valid_img_formats = {".png", ".jpg", ".jpeg"}
