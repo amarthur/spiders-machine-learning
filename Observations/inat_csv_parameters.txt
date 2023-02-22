@@ -1,0 +1,3 @@
+# Spiders: Order Araneae
+Query has[]=photos&quality_grade=research&identifications=any&place_id=6878&taxon_id=47118&spam=false
+Columns id, license, image_url, scientific_name
