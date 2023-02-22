@@ -1,6 +1,6 @@
 import time
 import urllib.request
-from multiprocessing import Pool, Process, cpu_count
+from multiprocessing import Process, cpu_count
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ from PIL import Image
 
 class Database:
 
-    def __init__(self, csv_file: str, imgs_threshold=100, database_name="Database"):
+    def __init__(self, csv_file: str, database_name="Database", imgs_threshold=100):
         # Directories Variables
         self.cwd = Path.cwd()
         self.main_folder = self.cwd.parent
@@ -212,8 +212,7 @@ class Database:
 def main():
     db = Database(csv_file="spiders.csv", imgs_threshold=100)
     db.create_database(print_info=False, plot_graph=False)
-    # db.check_images()
-    # db.split_dataset(dataset_name="Dataset", fixed_split=60, oversample=True, split_seed=17823)
+    db.split_dataset(fixed_split=60, oversample=False, split_seed=17823)
 
 
 if __name__ == "__main__":
