@@ -40,7 +40,7 @@ class Database:
 
         # Load CSV
         df = pd.read_csv(self.csv_file_path)
-        info['init_imgs'] = len(df)
+        info["Nº imgs initially"] = len(df)
 
         # Remove missing values
         df = df.dropna()
@@ -48,11 +48,12 @@ class Database:
 
         # Remove species below threshold
         df = df.groupby(self.scientific_name).filter(lambda x: len(x) >= self.imgs_threshold)
-        info['filtered_imgs'] = len(df)
+        info["Nº imgs after removing species below threshold"] = len(df)
 
         # Create the database
         species_index = sorted(df[self.scientific_name].unique())
         species_groups = df.groupby(self.scientific_name)
+        info["Nº classes"] = len(species_index)
 
         print("Creating directories...")
         self.create_species_directories(species_index)
@@ -70,11 +71,7 @@ class Database:
 
         # Info
         if print_info:
-            info['num_classes'] = len(species_index)
-            print(f"Qtde de imagens inicialmente: {info['init_imgs']}")
-            print(f"Qtde de imagens após dropna: {info['drop_na_imgs']}")
-            print(f"Qtde de imagens após filtragem final: {info['filtered_imgs']}")
-            print(f"Qtde de classes: {info['num_classes']}")
+            self.print_info(info)
 
         # Class distribution plot
         if plot_graph:
@@ -175,6 +172,13 @@ class Database:
         plt.ylabel("Quantidade de Imagens")
         plt.title("Quantidade de imagens por espécie")
         plt.savefig(self.observations_path / self.plot_name)
+
+    @staticmethod
+    def print_info(info):
+        print("\nInfo:")
+        for k, v in info.items():
+            print(f"{k}: {v}")
+        print()
 
     @staticmethod
     def create_directory(dir_location):
