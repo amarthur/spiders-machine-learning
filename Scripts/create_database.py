@@ -5,7 +5,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import splitfolders
+from directory_structure import DirectoryStructure
 from PIL import Image
 from tqdm import tqdm
 
@@ -13,20 +13,14 @@ from tqdm import tqdm
 class Database:
 
     def __init__(self, csv_file: str, database_name="Database", imgs_threshold=100):
-        # Directories Variables
-        self.cwd = Path.cwd()
-        self.main_folder = self.cwd.parent
-        self.observations_name = "Observations"
-        self.observations_path = self.main_folder / self.observations_name
-
-        # Constructor Variables
+        # Parameters Variables
         self.csv_file = csv_file
-        self.csv_file_path = self.observations_path / self.csv_file
+        self.database_name = database_name
         self.imgs_threshold = imgs_threshold
 
-        # Database Variables
-        self.database_name = database_name
-        self.database_path = self.main_folder / self.database_name
+        # Directories/Path Variables
+        self.dirs = DirectoryStructure(database_dir_name=database_name)
+        self.csv_file_path = self.dirs.observations_dir / self.csv_file
 
         # String Variables
         self.id = "id"
@@ -80,7 +74,7 @@ class Database:
 
     def create_species_directories(self, species_index):
         for species_name in species_index:
-            dir_location = self.database_path / species_name
+            dir_location = self.dirs.database_dir / species_name
             self.create_directory(dir_location)
 
     def save_images(self, species_groups, n_cpus):
@@ -119,7 +113,7 @@ class Database:
             # Give each image a name
             file_ext = Path(urls[i]).suffix
             img_name = f"{species_image_file_name}_{i}_{ids[i]}" + file_ext
-            img_location = self.database_path / species_name / img_name
+            img_location = self.dirs.database_dir / species_name / img_name
 
             # Try to download the image
             if not img_location.exists():
@@ -167,7 +161,7 @@ class Database:
         plt.xlabel("Nome Científico")
         plt.ylabel("Quantidade de Imagens")
         plt.title("Quantidade de imagens por espécie")
-        plt.savefig(self.observations_path / self.plot_name)
+        plt.savefig(self.dirs.observations_dir / self.plot_name)
 
     @staticmethod
     def print_info(info):
