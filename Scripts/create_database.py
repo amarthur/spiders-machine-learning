@@ -14,12 +14,12 @@ from tqdm import tqdm
 class Database:
 
     def __init__(self, csv_file: str, database_name="Database", imgs_threshold=100):
-        # Parameters Variables
+        # Parameters
         self.csv_file = csv_file
         self.database_name = database_name
         self.imgs_threshold = imgs_threshold
 
-        # Directories/Path Variables
+        # Directories
         self.dirs = DirectoryStructure(database_dir_name=database_name)
         self.csv_file_path = self.dirs.observations_dir / self.csv_file
 
@@ -147,10 +147,13 @@ class Database:
         Path(dir_location).mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def save_img_from_url(url, img_location):
+    def save_img_from_url(url, img_path):
+        if img_path.exists():
+            return
+
         for attempt in range(3):
             try:
-                urllib.request.urlretrieve(url, img_location)
+                urllib.request.urlretrieve(url, img_path)
             except Exception as e:
                 print(f"{url}: {e}")
                 time.sleep(attempt)
