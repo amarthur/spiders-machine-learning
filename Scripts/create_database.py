@@ -53,13 +53,13 @@ class Database:
 
         # Create the database
         species_index = sorted(df[self.scientific_name].unique())
+        species_groups = df.groupby(self.scientific_name)
         info["Nº classes"] = len(species_index)
 
         print("Creating directories...")
         self.create_species_directories(species_index)
         print("Finished creating directories.\n")
 
-        species_groups = df.groupby(self.scientific_name)
         print("Downloading images...")
         for _, species_group in species_groups:
             self.save_images(species_group)
@@ -73,6 +73,11 @@ class Database:
 
         if plot_graph:
             self.plot_distribution_graph(df)
+
+    def create_species_directories(self, species_index):
+        for species_name in species_index:
+            dir_location = self.dirs.database_dir / species_name
+            self.create_directory(dir_location)
 
     def save_images(self, species_group):
         species_group = species_group.reset_index()
@@ -95,11 +100,6 @@ class Database:
             pool.starmap_async(self.save_img_from_url, func_args)
             pool.close()
             pool.join()
-
-    def create_species_directories(self, species_index):
-        for species_name in species_index:
-            dir_location = self.dirs.database_dir / species_name
-            self.create_directory(dir_location)
 
     def check_images(self):
         images = list(itertools.chain.from_iterable(self.dirs.database_dict().values()))
