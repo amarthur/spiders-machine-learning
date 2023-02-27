@@ -1,7 +1,7 @@
 import itertools
 import time
 import urllib.request
-from multiprocessing import Process, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -27,10 +27,11 @@ class Database:
         self.id = "id"
         self.license = "license"
         self.img_url = "image_url"
+        self.image_name = "image_name"
         self.scientific_name = "scientific_name"
         self.plot_name = "distribution.png"
 
-    def create_database(self, check_images=True, print_info=False, plot_graph=False, n_cpus=cpu_count()):
+    def create_database(self, check_images=True, print_info=False, plot_graph=False):
         # Info dict
         info = {}
 
@@ -52,15 +53,16 @@ class Database:
 
         # Create the database
         species_index = sorted(df[self.scientific_name].unique())
-        species_groups = df.groupby(self.scientific_name)
         info["Nº classes"] = len(species_index)
 
         print("Creating directories...")
         self.create_species_directories(species_index)
         print("Finished creating directories.\n")
 
+        species_groups = df.groupby(self.scientific_name)
         print("Downloading images...")
-        self.save_images(species_groups, n_cpus)
+        for _, species_group in species_groups:
+            self.save_images(species_group)
         print("Finished downloading images.\n")
 
         if check_images:
@@ -72,52 +74,32 @@ class Database:
         if plot_graph:
             self.plot_distribution_graph(df)
 
+    def save_images(self, species_group):
+        species_group = species_group.reset_index()
+        i = species_group.index.astype(str)
+        urls = species_group[self.img_url]
+        ext = urls.apply(lambda x: Path(x).suffix)
+
+        # Naming
+        species_name = species_group[self.scientific_name][0]
+        image_name = species_name.replace(" ", "_")
+
+        # Define image names and paths
+        species_group[self.image_name] = image_name + "_" + i + ext
+        paths = species_group[self.image_name].apply(lambda x: self.dirs.database_dir / species_name / x)
+        func_args = [(url, path) for url, path in zip(urls, paths)]
+
+        # Multiprocess
+        processes = 64
+        with Pool(processes) as pool:
+            pool.starmap_async(self.save_img_from_url, func_args)
+            pool.close()
+            pool.join()
+
     def create_species_directories(self, species_index):
         for species_name in species_index:
             dir_location = self.dirs.database_dir / species_name
             self.create_directory(dir_location)
-
-    def save_images(self, species_groups, n_cpus):
-        processes = []
-
-        # Parallelize download
-        for _, species_group in species_groups:
-            num_images = len(species_group)
-            split_size = num_images // n_cpus
-
-            # Create processes
-            for i in range(n_cpus):
-                start = i * split_size
-                end = (i+1) * split_size if (i + 1) != n_cpus else num_images
-                new_process = Process(target=self.download_images, args=(species_group, start, end))
-                processes.append(new_process)
-
-        # Start processes
-        for process in processes:
-            process.start()
-
-        # Join processes
-        for process in processes:
-            process.join()
-
-    def download_images(self, species_group, start, end):
-        species_group = species_group.reset_index()  # Reset index to access rows sequentially
-
-        # Group columns
-        ids = species_group[self.id]
-        urls = species_group[self.img_url]
-        species_name = species_group[self.scientific_name][0]
-        species_image_file_name = species_name.replace(" ", "_").lower()
-
-        for i in range(start, end):
-            # Give each image a name
-            file_ext = Path(urls[i]).suffix
-            img_name = f"{species_image_file_name}_{i}_{ids[i]}" + file_ext
-            img_location = self.dirs.database_dir / species_name / img_name
-
-            # Try to download the image
-            if not img_location.exists():
-                self.save_img_from_url(url=urls[i], img_location=img_location)
 
     def check_images(self):
         images = list(itertools.chain.from_iterable(self.dirs.database_dict().values()))
