@@ -30,11 +30,12 @@ class Database:
         self.img_path = "image_path"
         self.scientific_name = "scientific_name"
 
-        # Naming Variables
-        self.plot_name = "distribution.png"
-        self.database_csv_name = Path(database_name + '.csv')
-
-    def create_database(self, check_images=True, create_csv=False, print_info=False, plot_graph=False):
+    def create_database(self,
+                        save_images: bool = False,
+                        check_images: bool = True,
+                        print_info: bool = False,
+                        database_csv_name: str = None,
+                        plot_name: str = None):
         # Info dict
         info = {}
 
@@ -67,21 +68,23 @@ class Database:
         groups_df = [self.define_images(species_group) for _, species_group in species_groups]
         images_df = pd.concat(groups_df, axis=0)
 
-        print("Downloading images...")
-        self.save_images(df=images_df)
-        print("Finished downloading images.\n")
+        if save_images:
+            print("Downloading images...")
+            self.save_images(df=images_df)
+            print("Finished downloading images.\n")
 
         if check_images:
-            self.check_images(df=images_df)
-
-        if create_csv:
-            self.create_csv(df=images_df)
+            paths = [path for path in images_df[self.img_path]]
+            self.check_images(paths)
 
         if print_info:
             self.print_info(info)
 
-        if plot_graph:
-            self.plot_distribution_graph(df)
+        if database_csv_name:
+            self.create_csv(images_df, database_csv_name)
+
+        if plot_name:
+            self.plot_distribution_graph(df, plot_name)
 
     def create_species_directories(self, species_index):
         for species_name in species_index:
@@ -107,8 +110,7 @@ class Database:
         urls_paths = [(url, path) for url, path in zip(df[self.img_url], df[self.img_path])]
         self.multiprocess(self.download_image, urls_paths)
 
-    def check_images(self, df):
-        paths = [path for path in df[self.img_path]]
+    def check_images(self, paths):
         self.multiprocess(self.check_image, paths)
 
     def multiprocess(self, func, func_args):
@@ -117,11 +119,12 @@ class Database:
             pool.close()
             pool.join()
 
-    def create_csv(self, df):
-        header = [self.id, self.license, self.img_name, self.scientific_name, self.img_url]
-        df.to_csv(self.dirs.database_dir / self.database_csv_name, columns=header, index=False)
+    def create_csv(self, df, database_csv_name):
+        database_csv_path = self.dirs.database_dir / database_csv_name
+        columns = [self.id, self.license, self.img_name, self.scientific_name, self.img_url]
+        df.to_csv(database_csv_path, columns=columns, index=False)
 
-    def plot_distribution_graph(self, df):
+    def plot_distribution_graph(self, df, plot_name):
         species_distribution = df[self.scientific_name].value_counts().sort_values(ascending=False)
         species_distribution.plot(kind='bar', figsize=(10, 10))
         plt.grid(axis='y', linestyle='--', color='grey')
@@ -130,7 +133,7 @@ class Database:
         plt.xlabel("Nome Científico")
         plt.ylabel("Quantidade de Imagens")
         plt.title("Quantidade de imagens por espécie")
-        plt.savefig(self.dirs.observations_dir / self.plot_name)
+        plt.savefig(self.dirs.observations_dir / plot_name)
 
     @staticmethod
     def print_info(info):
@@ -169,7 +172,11 @@ class Database:
 
 def main():
     db = Database(csv_file="spiders.csv", imgs_threshold=100)
-    db.create_database(check_images=True, create_csv=True, print_info=True, plot_graph=False)
+    db.create_database(save_images=True,
+                       check_images=True,
+                       print_info=True,
+                       database_csv_name="spiders_database.csv",
+                       plot_name="distribution.png")
 
 
 if __name__ == "__main__":
