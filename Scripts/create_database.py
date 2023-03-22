@@ -65,7 +65,7 @@ class Database:
 
         # Download images
         species_groups = df.groupby(self.scientific_name)
-        groups_df = [self.define_images(species_group) for _, species_group in species_groups]
+        groups_df = [self.get_group_data(species_group) for _, species_group in species_groups]
         images_df = pd.concat(groups_df, axis=0)
 
         if save_images:
@@ -80,10 +80,10 @@ class Database:
         if print_info:
             self.print_info(info)
 
-        if database_csv_name:
+        if database_csv_name is not None:
             self.create_csv(images_df, database_csv_name)
 
-        if plot_name:
+        if plot_name is not None:
             self.plot_distribution_graph(df, plot_name)
 
     def create_species_directories(self, species_index):
@@ -91,8 +91,7 @@ class Database:
             dir_location = self.dirs.database_dir / species_name
             self.create_directory(dir_location)
 
-    def define_images(self, species_group):
-        # Get group data
+    def get_group_data(self, species_group):
         group_data = species_group.reset_index()
         i = group_data.index.astype(str)
         ext = group_data[self.img_url].apply(lambda x: Path(x).suffix)
