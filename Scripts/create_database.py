@@ -32,34 +32,17 @@ class Database:
 
     def create_database(self,
                         save_images: bool = False,
+                        with_license: bool = True,
                         check_images: bool = True,
                         print_info: bool = False,
                         database_csv_name: str = None,
                         plot_name: str = None):
-        # Info dict
-        info = {}
-
-        # Load CSV
-        df = pd.read_csv(self.csv_file_path)
-        info["Nº imgs initially"] = len(df)
-
-        # Remove missing values
-        df = df.dropna()
-        info["Nº imgs after removing missing values"] = len(df)
-
-        # Remove invalid formats
-        valid_img_formats = [".png", ".jpg", ".jpeg"]
-        df = df[df[self.img_url].apply(lambda x: Path(x).suffix.lower() in valid_img_formats)]
-
-        # Remove species below threshold
-        df = df.groupby(self.scientific_name).filter(lambda x: len(x) >= self.imgs_threshold)
-        info["Nº imgs after removing species below threshold"] = len(df)
+        # Get data
+        df, info = self.get_data(with_license)
 
         # Create directories
-        species_index = sorted(df[self.scientific_name].unique())
-        info["Nº classes"] = len(species_index)
-
         print("Creating directories...")
+        species_index = sorted(df[self.scientific_name].unique())
         self.create_species_directories(species_index)
         print("Finished creating directories.\n")
 
@@ -74,8 +57,10 @@ class Database:
             print("Finished downloading images.\n")
 
         if check_images:
+            print("Checking images...")
             paths = [path for path in images_df[self.img_path]]
             self.check_images(paths)
+            print("Finished checking images.\n")
 
         if print_info:
             self.print_info(info)
@@ -85,6 +70,34 @@ class Database:
 
         if plot_name is not None:
             self.plot_distribution_graph(df, plot_name)
+
+    def get_data(self, with_license=True):
+        # Info dict
+        info = {}
+
+        # Load CSV
+        df = pd.read_csv(self.csv_file_path)
+        info["Nº imgs initially"] = len(df)
+
+        # Remove missing values
+        no_license = list(df)
+        no_license.remove(self.license)
+        df = df.dropna() if with_license else df.dropna(subset=no_license)
+        info["Nº imgs after removing missing values"] = len(df)
+
+        # Remove invalid formats
+        valid_img_formats = [".png", ".jpg", ".jpeg"]
+        df = df[df[self.img_url].apply(lambda x: Path(x).suffix.lower() in valid_img_formats)]
+
+        # Remove species below threshold
+        df = df.groupby(self.scientific_name).filter(lambda x: len(x) >= self.imgs_threshold)
+        info["Nº imgs after removing species below threshold"] = len(df)
+
+        # Get number of classes
+        classes = df[self.scientific_name].unique()
+        info["Nº classes"] = len(classes)
+
+        return df, info
 
     def create_species_directories(self, species_index):
         for species_name in species_index:
