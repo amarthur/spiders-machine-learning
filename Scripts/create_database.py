@@ -1,6 +1,6 @@
 import time
 import urllib.request
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -114,7 +114,7 @@ class Database:
         self.multiprocess(self.check_image, paths)
 
     def multiprocess(self, func, func_args):
-        with Pool(processes=self.processes) as pool:
+        with ThreadPool(processes=self.processes) as pool:
             pool.starmap_async(func, func_args)
             pool.close()
             pool.join()
