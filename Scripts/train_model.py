@@ -39,8 +39,8 @@ class SpeciesModel:
         resize_size = 256
         center_crop_size = 224
         rotation_degrees = 15
-        transform_mean = [0.485, 0.456, 0.406]
-        transform_std = [0.229, 0.224, 0.225]
+        self.transform_mean = [0.485, 0.456, 0.406]
+        self.transform_std = [0.229, 0.224, 0.225]
 
         self.data_transforms = {
             self.train_phase:
@@ -50,21 +50,21 @@ class SpeciesModel:
                     transforms.RandomHorizontalFlip(),
                     transforms.CenterCrop(size=center_crop_size),
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=transform_mean, std=transform_std)
+                    transforms.Normalize(mean=self.transform_mean, std=self.transform_std)
                 ]),
             self.valid_phase:
                 transforms.Compose([
                     transforms.Resize(size=resize_size),
                     transforms.CenterCrop(size=center_crop_size),
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=transform_mean, std=transform_std)
+                    transforms.Normalize(mean=self.transform_mean, std=self.transform_std)
                 ]),
             self.test_phase:
                 transforms.Compose([
                     transforms.Resize(size=resize_size),
                     transforms.CenterCrop(size=center_crop_size),
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=transform_mean, std=transform_std)
+                    transforms.Normalize(mean=self.transform_mean, std=self.transform_std)
                 ])
         }
 
@@ -241,11 +241,10 @@ class SpeciesModel:
         plt.tight_layout()
         plt.show()
 
-    @staticmethod
-    def normalize_image(tensor):
+    def normalize_image(self, tensor):
         image = tensor.numpy().transpose((1, 2, 0))
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
+        mean = np.array(self.transform_mean)
+        std = np.array(self.transform_std)
         image = std*image + mean
         image = np.clip(image, 0, 1)
         return image
