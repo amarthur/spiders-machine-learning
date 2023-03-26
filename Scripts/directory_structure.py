@@ -10,29 +10,29 @@ class DirectoryStructure:
         self.test = test
 
         # Naming Variables
-        #  Dirs
         self.scripts_dir_name = "Scripts"
         self.observations_dir_name = "Observations"
-        #  Phases
+        self.weights_dir_name = "SavedWeights"
+
         self.train_phase = "train"
         self.valid_phase = "val"
         self.test_phase = "test"
-        #  Headers
-        self.image_header = "image"
-        self.class_header = "class"
 
         # Directories
         self.main_dir = Path.cwd().parent
         self.scripts_dir = self.main_dir / self.scripts_dir_name
         self.observations_dir = self.main_dir / self.observations_dir_name
-        self.phases = [self.train_phase, self.valid_phase, self.test_phase
-                      ] if self.test else [self.train_phase, self.valid_phase]
+        self.weights_dir = self.main_dir / self.weights_dir_name
+
+        self.phases = [self.train_phase, self.valid_phase]
+        if self.test:
+            self.phases.append(self.test_phase)
 
         if database_dir_name is not None:
             self.database_dir = self.main_dir / self.database_dir_name
 
         if dataset_dir_name is not None:
-            self.dataset_dir = self.main_dir / self.dataset_dir_name
+            self.dataset_dir = self.main_dir / dataset_dir_name
             self.phases_dirs = {phase: self.dataset_dir / phase for phase in self.phases}
             self.phases_csv = {phase: f"{phase_dir/phase}.csv" for phase, phase_dir in self.phases_dirs.items()}
 
