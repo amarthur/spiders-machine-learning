@@ -6,17 +6,17 @@ from directory_structure import DirectoryStructure
 class Dataset:
 
     def __init__(self, database_name="Database", dataset_name="Dataset") -> None:
-        # Parameters Variables
+        # Parameters
         self.database_name = database_name
         self.dataset_name = dataset_name
 
-        # Directories Variables
+        # Directories
         self.dirs = DirectoryStructure(database_dir_name=database_name, dataset_dir_name=dataset_name)
         self.phases = self.dirs.phases
 
         # CSV Variables
-        self.image_header = self.dirs.image_header
-        self.class_header = self.dirs.class_header
+        self.image_header = "image"
+        self.class_header = "class"
         self.phases_csv = self.dirs.phases_csv
 
     def create_dataset(self, ratio_split=None, fixed_split=None, oversample=False, split_seed=1337, move=False):
