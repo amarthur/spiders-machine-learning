@@ -104,7 +104,7 @@ class SpeciesModel:
                                                  replacement=True)
         return weighted_sampler
 
-    def load_pretrained_model(self, model_name, weights_path=None):
+    def load_pretrained_model(self, model_name, weights_file_name=None):
         model_func = getattr(models, model_name)
         pretrained_model = model_func(weights='DEFAULT')
 
@@ -117,19 +117,14 @@ class SpeciesModel:
         pretrained_model.fc = nn.Sequential(nn.Linear(in_features, 256), nn.ReLU(), nn.Dropout(0.4),
                                             nn.Linear(256, self.num_classes))
 
-        model = pretrained_model.to(self.device)
+        # Try to load weights stored in a file (if any)
+        pretrained_model = nn.DataParallel(pretrained_model)
+        pretrained_model = self.load_model(pretrained_model, weights_file_name)
+        return pretrained_model
 
-        if weights_path:
-            if Path(weights_path).is_file():
-                model.load_state_dict(torch.load(weights_path))
-            else:
-                print("Weights file not found, initializing with random weights.")
-
-        return model
-
-    def train_model(self, model, criterion, optimizer, scheduler, num_epochs):
+    def train_model(self, model, criterion, optimizer, scheduler, num_epochs, weights_file_name=None):
         since = time.time()
-        best_model_wts = copy.deepcopy(model.state_dict())
+        best_model_state = copy.deepcopy(model.state_dict())
         best_acc = 0.0
 
         for epoch in range(num_epochs):
@@ -173,22 +168,24 @@ class SpeciesModel:
                 epoch_loss = running_loss / self.dataset_sizes[phase]
                 epoch_acc = running_corrects.double() / self.dataset_sizes[phase]
 
-                print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc * 100:.2f}%")
+                print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc * 100:.3f}%")
 
                 # Deep copy the model
                 if phase == self.valid_phase and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
-                    # torch.save(best_model_wts, self.dirs.weights_dir / "path")
+                    best_model_state = copy.deepcopy(model.state_dict())
+                    if weights_file_name is not None:
+                        best_model_state_cpu = copy.deepcopy(model.state_dict())
+                        self.save_best_model(best_model_state_cpu, weights_file_name)
 
             print()
 
         time_elapsed = time.time() - since
-        print(f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
-        print(f"Best val Acc: {best_acc:4f}")
+        print(f"Training completed in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
+        print(f"Best val Acc: {best_acc * 100:.3f}")
 
         # load best model weights
-        model.load_state_dict(best_model_wts)
+        model.load_state_dict(best_model_state)
         return model
 
     def show_predictions(self, model, num_images=9):
@@ -249,6 +246,20 @@ class SpeciesModel:
         image = np.clip(image, 0, 1)
         return image
 
+    def save_best_model(self, model_state_dict, weights_file_name):
+        model_file_path = Path(self.dirs.weights_dir / weights_file_name)
+        Path(model_file_path.parent).mkdir(parents=True, exist_ok=True)
+        torch.save(model_state_dict, model_file_path)
+
+    def load_model(self, model, weights_file_name):
+        if weights_file_name is not None:
+            model_state_dict_path = self.dirs.weights_dir / weights_file_name
+            if Path(model_state_dict_path).is_file():
+                model.load_state_dict(torch.load(model_state_dict_path))
+            else:
+                print(f"Error: File '{model_state_dict_path}' not found. Initializing with random weights.")
+        return model
+
 
 def main():
     if not torch.cuda.is_available():
@@ -257,12 +268,14 @@ def main():
 
     num_epochs = 1
     batch_size = 128
-    device = torch.device("cuda:0")
+    device = torch.device("cuda")
 
     spc = SpeciesModel(dataset_name="Dataset", device=device)
     spc.load_data(batch_size=batch_size, weighted_sampler=True)
 
-    model = spc.load_pretrained_model(model_name='resnet50')
+    pretrained_model = spc.load_pretrained_model(model_name='resnet50', weights_file_name=None)
+    model = pretrained_model.to(device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer_ft = optim.Adam(model.parameters())
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=4, gamma=0.1)
@@ -271,9 +284,8 @@ def main():
                                     criterion=criterion,
                                     optimizer=optimizer_ft,
                                     scheduler=exp_lr_scheduler,
-                                    num_epochs=num_epochs)
-
-    spc.show_predictions(trained_model, num_images=12)
+                                    num_epochs=num_epochs,
+                                    weights_file_name=None)
 
 
 if __name__ == "__main__":
