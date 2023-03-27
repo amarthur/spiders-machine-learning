@@ -1,5 +1,5 @@
-import copy
 import time
+from copy import deepcopy
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -124,7 +124,7 @@ class SpeciesModel:
 
     def train_model(self, model, criterion, optimizer, scheduler, num_epochs, weights_file_name=None):
         since = time.time()
-        best_model_state = copy.deepcopy(model.state_dict())
+        best_model_state = deepcopy(model.state_dict())
         best_acc = 0.0
 
         for epoch in range(num_epochs):
@@ -173,10 +173,9 @@ class SpeciesModel:
                 # Deep copy the model
                 if phase == self.valid_phase and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    best_model_state = copy.deepcopy(model.state_dict())
+                    best_model_state = deepcopy(model.state_dict())
                     if weights_file_name is not None:
-                        best_model_state_cpu = copy.deepcopy(model.state_dict())
-                        self.save_best_model(best_model_state_cpu, weights_file_name)
+                        self.save_best_model(best_model_state, weights_file_name)
 
             print()
 
