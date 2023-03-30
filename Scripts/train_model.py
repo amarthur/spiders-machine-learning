@@ -118,8 +118,8 @@ class SpeciesModel:
                                             nn.Linear(256, self.num_classes))
 
         # Try to load weights stored in a file (if any)
-        pretrained_model = nn.DataParallel(pretrained_model)
-        pretrained_model = self.load_model(pretrained_model, weights_file_name)
+        pretrained_model = nn.parallel.DataParallel(pretrained_model)
+        pretrained_model = self.load_model_state(pretrained_model, weights_file_name)
         return pretrained_model
 
     def train_model(self, model, criterion, optimizer, scheduler, num_epochs, weights_file_name=None):
@@ -175,7 +175,7 @@ class SpeciesModel:
                     best_acc = epoch_acc
                     best_model_state = deepcopy(model.state_dict())
                     if weights_file_name is not None:
-                        self.save_best_model(best_model_state, weights_file_name)
+                        self.save_model_state(best_model_state, weights_file_name)
 
             print()
 
@@ -245,18 +245,18 @@ class SpeciesModel:
         image = np.clip(image, 0, 1)
         return image
 
-    def save_best_model(self, model_state_dict, weights_file_name):
+    def save_model_state(self, model_state_dict, weights_file_name):
         model_file_path = Path(self.dirs.weights_dir / weights_file_name)
         Path(model_file_path.parent).mkdir(parents=True, exist_ok=True)
         torch.save(model_state_dict, model_file_path)
 
-    def load_model(self, model, weights_file_name):
+    def load_model_state(self, model, weights_file_name):
         if weights_file_name is not None:
             model_state_dict_path = self.dirs.weights_dir / weights_file_name
             if Path(model_state_dict_path).is_file():
                 model.load_state_dict(torch.load(model_state_dict_path))
             else:
-                print(f"Error: File '{model_state_dict_path}' not found. Initializing with random weights.")
+                print(f"File '{weights_file_name}' not found. Initializing with random weights.")
         return model
 
 
