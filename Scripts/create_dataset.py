@@ -19,7 +19,14 @@ class Dataset:
         self.class_header = "class"
         self.phases_csv = self.dirs.phases_csv
 
-    def create_dataset(self, ratio_split=None, fixed_split=None, oversample=False, split_seed=1337, move=False):
+    def create_dataset(self,
+                       ratio_split=None,
+                       fixed_split=None,
+                       oversample=False,
+                       split_seed=1337,
+                       move=False,
+                       create_csv=True):
+
         input_path = self.dirs.database_dir
         output_path = self.dirs.dataset_dir
 
@@ -39,6 +46,9 @@ class Dataset:
                                oversample=oversample,
                                group_prefix=None,
                                move=move)
+
+        if create_csv:
+            self.create_dataset_csv()
 
     def create_dataset_csv(self):
         for phase, phase_data in self.dirs.dataset_dict().items():
