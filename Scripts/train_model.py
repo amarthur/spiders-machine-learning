@@ -168,7 +168,7 @@ class SpeciesModel:
                 epoch_loss = running_loss / self.dataset_sizes[phase]
                 epoch_acc = running_corrects.double() / self.dataset_sizes[phase]
 
-                print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc * 100:.3f}%")
+                print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc * 100:.2f}%")
 
                 # Deep copy the model
                 if phase == self.valid_phase and epoch_acc > best_acc:
@@ -181,7 +181,7 @@ class SpeciesModel:
 
         time_elapsed = time.time() - since
         print(f"Training completed in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
-        print(f"Best val Acc: {best_acc * 100:.3f}")
+        print(f"Best val Acc: {best_acc * 100:.2f}%")
 
         # load best model weights
         model.load_state_dict(best_model_state)
@@ -211,7 +211,7 @@ class SpeciesModel:
     def plot_predictions(self, images, preds, labels, class_names, num_images, cols=4):
         rows = -(-num_images // cols)  # ceil(num_images / cols)
 
-        fig, axes = plt.subplots(rows, cols, figsize=(15, 7))
+        _, axes = plt.subplots(rows, cols, figsize=(15, 7))
 
         for i in range(num_images):
             row, col = divmod(i, cols)
