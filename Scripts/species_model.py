@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from directory_structure import DirectoryStructure
-from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, models, transforms
 
@@ -19,7 +17,7 @@ class SpeciesModel:
     def __init__(self, dataset_name: str, device: torch.device) -> None:
         # Parameters
         self.dataset_name = dataset_name
-        self.device = device
+        self.device = torch.device(device)
 
         # Directories
         self.dirs = DirectoryStructure(dataset_dir_name=dataset_name)
@@ -33,7 +31,7 @@ class SpeciesModel:
         self.dataset_sizes = None
         self.dataloaders = None
         self.class_names = None
-        self.num_classes = None
+        self.num_classes = len(list(self.dirs.phases_dirs[self.train_phase].glob('*')))
 
         # Transforms
         resize_size = 256
@@ -68,7 +66,7 @@ class SpeciesModel:
                 ])
         }
 
-    def load_data(self, batch_size, weighted_sampler=False):
+    def load_data(self, batch_size, use_weighted_sampler=False):
         # Define image datasets
         self.image_datasets = {
             phase: datasets.ImageFolder(root=path, transform=self.data_transforms[phase])
@@ -76,7 +74,7 @@ class SpeciesModel:
         }
 
         # Define dataloaders
-        weighted_sampler = self.get_weighted_sampler() if weighted_sampler else None
+        weighted_sampler = self.get_weighted_sampler() if use_weighted_sampler else None
         sampler = {phase: (weighted_sampler if phase == self.train_phase else None) for phase in self.phases}
         shuffle = {phase: (True if sampler[phase] is None else False) for phase in self.phases}
         self.dataloaders = {
@@ -120,14 +118,26 @@ class SpeciesModel:
         # Try to load weights stored in a file (if any)
         pretrained_model = nn.parallel.DataParallel(pretrained_model)
         pretrained_model = self.load_model_state(pretrained_model, weights_file_name)
-        return pretrained_model
+        return pretrained_model.to(self.device)
 
-    def train_model(self, model, criterion, optimizer, scheduler, num_epochs, weights_file_name=None):
+    def train_model(self,
+                    model,
+                    num_epochs,
+                    batch_size,
+                    criterion,
+                    optimizer,
+                    scheduler,
+                    use_weighted_sampler=False,
+                    weights_file_name=None):
+
+        self.load_data(batch_size, use_weighted_sampler)
+
         since = time.time()
         best_model_state = deepcopy(model.state_dict())
         best_acc = 0.0
 
         for epoch in range(num_epochs):
+            print()
             print(f"Epoch {epoch+1}/{num_epochs}")
             print("-" * 10)
 
@@ -176,8 +186,6 @@ class SpeciesModel:
                     best_model_state = deepcopy(model.state_dict())
                     if weights_file_name is not None:
                         self.save_model_state(best_model_state, weights_file_name)
-
-            print()
 
         time_elapsed = time.time() - since
         print(f"Training completed in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
@@ -261,30 +269,8 @@ class SpeciesModel:
 
 
 def main():
-    if not torch.cuda.is_available():
-        print("Cuda not available")
-        return
-
-    num_epochs = 1
-    batch_size = 128
     device = torch.device("cuda")
-
     spc = SpeciesModel(dataset_name="Dataset", device=device)
-    spc.load_data(batch_size=batch_size, weighted_sampler=True)
-
-    pretrained_model = spc.load_pretrained_model(model_name='resnet50', weights_file_name=None)
-    model = pretrained_model.to(device)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer_ft = optim.Adam(model.parameters())
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=4, gamma=0.1)
-
-    trained_model = spc.train_model(model=model,
-                                    criterion=criterion,
-                                    optimizer=optimizer_ft,
-                                    scheduler=exp_lr_scheduler,
-                                    num_epochs=num_epochs,
-                                    weights_file_name=None)
 
 
 if __name__ == "__main__":
