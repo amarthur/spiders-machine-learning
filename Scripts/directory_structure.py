@@ -10,9 +10,12 @@ class DirectoryStructure:
         self.test = test
 
         # Naming Variables
+        self.config_dir_name = "Configs"
+        self.weights_dir_name = "Weights"
         self.scripts_dir_name = "Scripts"
+        self.datasets_dir_name = "Datasets"
+        self.databases_dir_name = "Databases"
         self.observations_dir_name = "Observations"
-        self.weights_dir_name = "SavedWeights"
 
         self.train_phase = "train"
         self.valid_phase = "val"
@@ -23,6 +26,7 @@ class DirectoryStructure:
         self.scripts_dir = self.main_dir / self.scripts_dir_name
         self.observations_dir = self.main_dir / self.observations_dir_name
         self.weights_dir = self.main_dir / self.weights_dir_name
+        self.configs_dir = self.main_dir / self.config_dir_name
 
         self.phases = [self.train_phase, self.valid_phase]
         if self.test:
