@@ -1,62 +1,59 @@
 quick_settings:
-    do_model: &dmd True
-    do_dataset: &dds False
-    do_database: &ddb False
-    dataset_name: &ds "Dataset"
-    database_name: &db "Database"
-
+  do_model: &dmd True
+  do_dataset: &dds False
+  do_database: &ddb False
+  dataset_name: &ds "Dataset"
+  database_name: &db "Database"
 
 model:
-    do: *dmd
+  do: *dmd
 
-    init_parameters:
-        device: "cuda"
-        dataset_name: *ds
+  init_parameters:
+    device: "cuda"
+    dataset_name: *ds
 
-    pretrained_parameters:
-        model_name: "resnet50"
-        weights_file_name: null
+  pretrained_parameters:
+    model_name: "resnet50"
+    weights_file_name: null
 
-    criterion: "CrossEntropyLoss"
-    optimizer: "Adam"
-    lr_scheduler:
-        sched_name: "StepLR"
-        params:
-            step_size: 4
-            gamma: 0.1
+  criterion: "CrossEntropyLoss"
+  optimizer: "Adam"
+  lr_scheduler:
+    sched_name: "StepLR"
+    params:
+      step_size: 4
+      gamma: 0.1
 
-    train_parameters:
-        num_epochs: 1
-        batch_size: 128
-        use_weighted_sampler: False
-        weights_file_name: null
-
+  train_parameters:
+    num_epochs: 1
+    batch_size: 128
+    use_weighted_sampler: False
+    weights_file_name: null
 
 dataset:
-    do: *dds
+  do: *dds
 
-    init_parameters:
-        database_name: *db
-        dataset_name: *ds
+  init_parameters:
+    database_name: *db
+    dataset_name: *ds
 
-    creation_parameters:
-        fixed_split: 40
-        oversample: False
-        create_csv: True
-
+  creation_parameters:
+    fixed_split: 40
+    oversample: False
+    create_csv: True
 
 database:
-    do: *ddb
+  do: *ddb
 
-    init_parameters:
-        csv_file: "spiders.csv"
-        database_name: *db
-        imgs_threshold: 100
+  init_parameters:
+    csv_file: "spiders.csv"
+    database_name: *db
+    imgs_threshold: 100
 
-    creation_parameters:
-        save_images: True
-        with_license: True
-        check_images: True
-        print_info: True
-        database_csv_name: "database.csv"
-        plot_name: "distribution.png"
+  creation_parameters:
+    save_images: True
+    with_license: True
+    check_images: True
+    print_info: True
+    database_csv_name: "database.csv"
+    plot_name: "distribution.png"
