@@ -29,10 +29,10 @@ class DirectoryStructure:
             self.phases.append(self.test_phase)
 
         if database_dir_name is not None:
-            self.database_dir = self.main_dir / self.database_dir_name
+            self.database_dir = self.main_dir / self.databases_dir_name / database_dir_name
 
         if dataset_dir_name is not None:
-            self.dataset_dir = self.main_dir / dataset_dir_name
+            self.dataset_dir = self.main_dir / self.datasets_dir_name / dataset_dir_name
             self.phases_dirs = {phase: self.dataset_dir / phase for phase in self.phases}
             self.phases_csv = {phase: f"{phase_dir/phase}.csv" for phase, phase_dir in self.phases_dirs.items()}
 
