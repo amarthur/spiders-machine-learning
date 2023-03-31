@@ -183,12 +183,7 @@ class Database:
 
 
 def main():
-    db = Database(csv_file="spiders.csv", imgs_threshold=100)
-    db.create_database(save_images=True,
-                       check_images=True,
-                       print_info=True,
-                       database_csv_name="spiders_database.csv",
-                       plot_name="distribution.png")
+    db = Database(csv_file="example.csv")
 
 
 if __name__ == "__main__":

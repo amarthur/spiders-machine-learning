@@ -59,8 +59,6 @@ class Dataset:
 
 def main():
     ds = Dataset()
-    ds.create_dataset(fixed_split=60)
-    ds.create_dataset_csv()
 
 
 if __name__ == "__main__":

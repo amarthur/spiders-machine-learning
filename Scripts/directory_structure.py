@@ -55,7 +55,7 @@ class DirectoryStructure:
 
 
 def main():
-    return
+    dirs = DirectoryStructure()
 
 
 if __name__ == "__main__":
