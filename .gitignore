@@ -2,13 +2,15 @@
 *.[pP][nN][gG]
 *.[jJ][pP][gG]
 *.[jJ][pP][eE][gG]
+*.[tT][xX][tT]
 
 # Folders
 *Documents/
-*Database/
-*Dataset/
+*Database*/
+*Dataset*/
 *[Aa]rchive/
 *[Mm]isc/
+*[Ww]eights*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
