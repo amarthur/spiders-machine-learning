@@ -33,6 +33,8 @@ def train_model(sm_config):
     criterion_class = getattr(nn, model_params['criterion'])
     optimizer_class = getattr(optim, model_params['optimizer'])
     scheduler_class = getattr(lr_scheduler, sched_config['sched_name'])
+    if train_params['weights_file_name'] == True:
+        train_params['weights_file_name'] = get_config_file_name(sm_config, ext='.pt')
 
     # Model
     sm = SpeciesModel(**sm_config['init_parameters'])
@@ -47,7 +49,7 @@ def train_model(sm_config):
     sm.train_model(model=model, **model_params, **train_params)
 
 
-def get_config_file_name(data, exclude_keys={"device", "weights_file_name"}):
+def get_config_name(data, exclude_keys):
     is_dict = lambda v: isinstance(v, dict)
     name = ""
 
@@ -56,11 +58,15 @@ def get_config_file_name(data, exclude_keys={"device", "weights_file_name"}):
             if value is None or key in exclude_keys:
                 continue
             if is_dict(value):
-                name += f"{get_config_file_name(value, exclude_keys)}"
+                name += f"{get_config_name(value, exclude_keys)}"
             else:
-                name += f"{key[0]}_{str(value)}--"
+                name += f"-{key[0]}_{str(value)}-"
     return name
 
+def get_config_file_name(config_data, ext='.yaml', exclude_keys={"device", "weights_file_name"}):
+    config_name = get_config_name(config_data, exclude_keys)
+    config_file_name = config_name[1:-1] + ext
+    return config_file_name
 
 def get_config_file_path(config_file_name):
     dirs = DirectoryStructure()
@@ -99,10 +105,11 @@ def main():
     # Rename
     if args.rename and config_file_name != defaults['filename']:
         new_config_file_name = get_config_file_name(sm_config)
-        new_config_file_name = new_config_file_name[:-2] + '.yaml'
-
         new_config_file_path = config_file_path.with_name(new_config_file_name)
-        config_file_path.rename(new_config_file_path)
+        if new_config_file_path.exists():
+            print("Skipping: File with same configurations already exists.")
+        else:
+            config_file_path.rename(new_config_file_path)
 
     if qk_config['do_database']:
         create_database(db_config)
