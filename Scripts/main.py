@@ -1,4 +1,4 @@
-import sys
+import argparse
 from pathlib import Path
 
 import torch
@@ -47,30 +47,62 @@ def train_model(sm_config):
     sm.train_model(model=model, **model_params, **train_params)
 
 
-def get_yaml_config_file():
+def get_config_file_name(data, exclude_keys={"device", "weights_file_name"}):
+    is_dict = lambda v: isinstance(v, dict)
+    name = ""
+
+    if is_dict(data):
+        for key, value in data.items():
+            if value is None or key in exclude_keys:
+                continue
+            if is_dict(value):
+                name += f"{get_config_file_name(value, exclude_keys)}"
+            else:
+                name += f"{key[0]}_{str(value)}--"
+    return name
+
+
+def get_config_file_path(config_file_name):
     dirs = DirectoryStructure()
-    yaml_default_name = "default_config.yaml"
-
-    yaml_file = yaml_default_name if len(sys.argv) < 2 else sys.argv[1]
-    yaml_file_path = dirs.configs_dir / Path(yaml_file).name
-    valid_yaml_file = yaml_file_path.is_file() and yaml_file_path.suffix == ".yaml"
-
-    return yaml_file_path if valid_yaml_file else None
+    config_file_path = dirs.configs_dir / config_file_name
+    file_is_valid = config_file_path.is_file() and config_file_path.suffix == ".yaml"
+    return config_file_path if file_is_valid else None
 
 
 def main():
-    yaml_file = get_yaml_config_file()
-    if yaml_file == None:
-        print("Error: Invalid YAML config file.")
-        return
+    # Define parser flags
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--filename', type=str, help='Input config filename (Filename/Path)')
+    parser.add_argument('-r', '--rename', action=argparse.BooleanOptionalAction, help='Rename config file (True/False)')
 
-    with open(yaml_file) as config_file:
+    # Add defaults
+    defaults = {"filename": "default_config.yaml", "rename": False}
+    parser.set_defaults(**defaults)
+
+    # Parse
+    args = parser.parse_args()
+    config_file_name = Path(args.filename).name
+    config_file_path = get_config_file_path(config_file_name)
+
+    # Get config file
+    if config_file_path is None:
+        raise FileNotFoundError(f"File '{config_file_name}' not found.")
+
+    with open(config_file_path) as config_file:
         config = yaml.safe_load(config_file.read())
 
     qk_config = config['quick_settings']
     db_config = config['database']
     ds_config = config['dataset']
     sm_config = config['model']
+
+    # Rename
+    if args.rename and config_file_name != defaults['filename']:
+        new_config_file_name = get_config_file_name(sm_config)
+        new_config_file_name = new_config_file_name[:-2] + '.yaml'
+
+        new_config_file_path = config_file_path.with_name(new_config_file_name)
+        config_file_path.rename(new_config_file_path)
 
     if qk_config['do_database']:
         create_database(db_config)
