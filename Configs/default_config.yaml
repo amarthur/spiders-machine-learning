@@ -1,13 +1,11 @@
 quick_settings:
-  do_model: &dmd True
-  do_dataset: &dds False
-  do_database: &ddb False
+  do_model: True
+  do_dataset: False
+  do_database: False
   dataset_name: &ds "Dataset"
   database_name: &db "Database"
 
 model:
-  do: *dmd
-
   init_parameters:
     device: "cuda"
     dataset_name: *ds
@@ -16,23 +14,22 @@ model:
     model_name: "resnet50"
     weights_file_name: null
 
-  criterion: "CrossEntropyLoss"
-  optimizer: "Adam"
-  lr_scheduler:
-    sched_name: "StepLR"
-    params:
-      step_size: 4
-      gamma: 0.1
+  model_parameters:
+    criterion: "CrossEntropyLoss"
+    optimizer: "Adam"
+    scheduler:
+      sched_name: "StepLR"
+      params:
+        step_size: 4
+        gamma: 0.1
 
   train_parameters:
-    num_epochs: 1
+    num_epochs: 20
     batch_size: 128
-    use_weighted_sampler: False
+    use_weighted_sampler: True
     weights_file_name: null
 
 dataset:
-  do: *dds
-
   init_parameters:
     database_name: *db
     dataset_name: *ds
@@ -43,8 +40,6 @@ dataset:
     create_csv: True
 
 database:
-  do: *ddb
-
   init_parameters:
     csv_file: "spiders.csv"
     database_name: *db

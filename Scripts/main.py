@@ -23,26 +23,28 @@ def create_dataset(ds_config):
 
 
 def train_model(sm_config):
-    sched_config = sm_config['lr_scheduler']
-    criterion_class = getattr(nn, sm_config['criterion'])
-    optimizer_class = getattr(optim, sm_config['optimizer'])
+    # Configs
+    pretr_params = sm_config['pretrained_parameters']
+    train_params = sm_config['train_parameters']
+    model_params = sm_config['model_parameters']
+    sched_config = model_params['scheduler']
+
+    # Configure
+    criterion_class = getattr(nn, model_params['criterion'])
+    optimizer_class = getattr(optim, model_params['optimizer'])
     scheduler_class = getattr(lr_scheduler, sched_config['sched_name'])
 
     # Model
     sm = SpeciesModel(**sm_config['init_parameters'])
-    model = sm.load_pretrained_model(**sm_config['pretrained_parameters'])
+    model = sm.load_pretrained_model(**pretr_params)
 
-    # Other parameters
-    criterion = criterion_class()
-    optimizer_ft = optimizer_class(model.parameters())
-    lr_sched = scheduler_class(optimizer_ft, **sched_config['params'])
+    # Model parameters
+    model_params['criterion'] = criterion_class()
+    model_params['optimizer'] = optimizer_class(model.parameters())
+    model_params['scheduler'] = scheduler_class(model_params['optimizer'], **sched_config['params'])
 
     # Training
-    sm.train_model(model=model,
-                   criterion=criterion,
-                   optimizer=optimizer_ft,
-                   scheduler=lr_sched,
-                   **sm_config['train_parameters'])
+    sm.train_model(model=model, **model_params, **train_params)
 
 
 def get_yaml_config_file():
@@ -65,21 +67,21 @@ def main():
     with open(yaml_file) as config_file:
         config = yaml.safe_load(config_file.read())
 
+    qk_config = config['quick_settings']
     db_config = config['database']
     ds_config = config['dataset']
     sm_config = config['model']
 
-    if db_config['do'] == True:
+    if qk_config['do_database']:
         create_database(db_config)
 
-    if ds_config['do'] == True:
+    if qk_config['do_dataset']:
         create_dataset(ds_config)
 
-    if sm_config['do'] == True:
-        if torch.cuda.is_available():
-            train_model(sm_config)
-        else:
-            print("Cuda not available")
+    if qk_config['do_model']:
+        if not torch.cuda.is_available():
+            raise RuntimeError("Cuda not available")
+        train_model(sm_config)
 
 
 if __name__ == "__main__":
