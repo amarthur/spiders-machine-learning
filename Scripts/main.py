@@ -42,11 +42,20 @@ def train_model(sm_config):
 
     # Model parameters
     model_params['criterion'] = criterion_class()
-    model_params['optimizer'] = optimizer_class(model.parameters())
+    model_params['optimizer'] = optimizer_class(model.parameters(), weight_decay=0.00001)
     model_params['scheduler'] = scheduler_class(model_params['optimizer'], **sched_config['params'])
-
+    
     # Training
-    sm.train_model(model=model, **model_params, **train_params)
+    conv_first = sm.train_model(model=model, **model_params, **train_params, load_data=True)
+    sm.show_me(conv_first, img_path=sm.dirs.dataset_dir / 'val/Corythalia conferta/Corythalia_conferta_638.jpeg')
+    
+    
+    # sm.show_me(model, img_path=sm.dirs.dataset_dir / 'val/Corythalia conferta/Corythalia_conferta_638.jpeg', \
+    #            weights_file_name=sm.dirs.weights_dir / 'conv50.pt')
+    
+    # for parameter in conv_first.parameters():
+    #     parameter.requires_grad = False
+    # now_just_fc = sm.train_model(model=conv_first, **model_params, **train_params, load_data=False)
 
 
 def get_config_name(data, exclude_keys):
@@ -75,7 +84,7 @@ def get_config_file_path(config_file_name):
     return config_file_path if file_is_valid else None
 
 
-def main():
+def main():    
     # Define parser flags
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--filename', type=str, help='Input config filename (Filename/Path)')
@@ -113,13 +122,13 @@ def main():
 
     if qk_config['do_database']:
         create_database(db_config)
-
+    
     if qk_config['do_dataset']:
         create_dataset(ds_config)
 
     if qk_config['do_model']:
         if not torch.cuda.is_available():
-            raise RuntimeError("Cuda not available")
+            raise RuntimeError("Cuda not available")  
         train_model(sm_config)
 
 

@@ -2,3 +2,9 @@ numpy
 pandas
 matplotlib
 split-folders
+PyYAML
+torch
+torchvision
+torchaudio
+torchmetrics
+lightning

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from directory_structure import DirectoryStructure
 from PIL import Image
+import numpy as np
 
 
 class Database:
@@ -140,6 +141,9 @@ class Database:
         species_distribution = df[self.scientific_name].value_counts().sort_values(ascending=False)
         species_distribution.plot(kind='bar', figsize=(10, 10))
         plt.grid(axis='y', linestyle='--', color='grey')
+        plt.axhline(y=500, color='gray', linestyle='--', linewidth=0.5)
+        plt.subplots_adjust(bottom=0.6)
+        plt.yticks(np.arange(0, 4501, 500))
         plt.subplots_adjust(bottom=0.25)
 
         plt.xlabel("Nome Científico")
@@ -183,7 +187,8 @@ class Database:
 
 
 def main():
-    db = Database(csv_file="example.csv")
+    db = Database(csv_file="spiders.csv")
+    db.create_database(with_license=False, check_images=False, plot_name="All.png")
 
 
 if __name__ == "__main__":
