@@ -2,10 +2,10 @@
 *.[pP][nN][gG]
 *.[jJ][pP][gG]
 *.[jJ][pP][eE][gG]
-*.[tT][xX][tT]
 *.[yY][aA][mM][lL]
 
 # Folders
+*logs/
 *Documents/
 *Database*/
 *Dataset*/
