@@ -120,7 +120,7 @@ class Database:
         return group_data
 
     def save_images(self, df):
-        urls_paths = [(url, path) for url, path in zip(df[self.img_url], df[self.img_path])]
+        urls_paths = [(url, path) for url, path in zip(df[self.img_url], df[self.img_path], strict=True)]
         self.multiprocess(self.download_image, urls_paths)
 
     def check_images(self, paths):
