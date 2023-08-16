@@ -1,0 +1,35 @@
+trainer:
+  devices: 1
+  logger:
+    class_path: pytorch_lightning.loggers.CometLogger
+    init_args:
+      api_key: 'api_key'
+      workspace: 'workspace'
+      project_name: 'project_name'
+      save_dir: 'logs'
+  max_epochs: 30
+model:
+    num_classes: 10
+    criterion:
+      class_path: torch.nn.CrossEntropyLoss
+      init_args:
+        reduction: mean
+data:
+  data_dir: 'Datasets/Dataset'
+  batch_size: 128
+  num_workers: 8
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.001
+lr_scheduler:
+  class_path: pytorch_lightning.cli.ReduceLROnPlateau
+  init_args:
+    mode: "min"
+    factor: 0.1
+    patience: 5
+    threshold: 1.0e-4
+    monitor: "Val Loss"
+early_stopping:
+  monitor: "Val Loss"
+  patience: 10
