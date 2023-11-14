@@ -3,11 +3,12 @@ from pathlib import Path
 import numpy as np
 from sklearn.model_selection import train_test_split, KFold
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from torchvision.datasets import ImageFolder
 
 from sp_transform import SpDataTransforms
+from sp_dataset import SpDataset
 
 
 class SpDataModule(pl.LightningDataModule):
@@ -17,7 +18,7 @@ class SpDataModule(pl.LightningDataModule):
         batch_size: int = 128,
         sampler: str = 'weighted',
         fold: int = 0,
-        num_folds: int = 5,
+        num_folds: int = 1,
         val_split: float = .1,
         test_split: float = .1,
         val_seed: int = 192873,
@@ -29,6 +30,8 @@ class SpDataModule(pl.LightningDataModule):
         self.num_workers = 16
 
         # Cross Validation
+        if not (0 <= fold < num_folds):
+            raise ValueError(f"Invalid fold value: {fold}. It should be in range [0, {num_folds-1}]")
         self.fold = fold
         self.num_folds = num_folds
 
@@ -55,7 +58,7 @@ class SpDataModule(pl.LightningDataModule):
         if self.num_folds > 1:
             kf = KFold(n_splits=self.num_folds, shuffle=True, random_state=self.val_seed)
             splits = list(kf.split(train_val_indices))
-            train_indices, val_indices = splits[self.current_fold]
+            train_indices, val_indices = splits[self.fold]
         else:
             train_indices, val_indices = train_test_split(
                 train_val_indices, test_size=self.val_split/(1-self.test_split), random_state=self.val_seed)
@@ -103,19 +106,3 @@ class SpDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
-
-class SpDataset(Dataset):
-    def __init__(self, dataset, indices, transform=None):
-        super().__init__()
-        self.dataset = Subset(dataset, indices)
-        self.transform = transform
-        self.targets = [dataset.targets[i] for i in indices]
-
-    def __getitem__(self, index):
-        x, y = self.dataset[index]
-        if self.transform:
-            x = self.transform(x)
-        return x, y
-
-    def __len__(self):
-        return len(self.dataset)
