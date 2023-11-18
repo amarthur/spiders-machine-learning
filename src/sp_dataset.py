@@ -1,4 +1,5 @@
-from torch.utils.data import Subset, Dataset
+from torch.utils.data import Dataset, Subset
+
 
 class SpDataset(Dataset):
     def __init__(self, dataset, indices, transform=None):
@@ -15,4 +16,3 @@ class SpDataset(Dataset):
 
     def __len__(self):
         return len(self.dataset)
-

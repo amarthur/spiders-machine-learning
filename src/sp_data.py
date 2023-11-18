@@ -1,14 +1,14 @@
 from pathlib import Path
 
 import numpy as np
-from sklearn.model_selection import train_test_split, KFold
 import pytorch_lightning as pl
+from sklearn.model_selection import KFold, train_test_split
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from torchvision.datasets import ImageFolder
 
-from sp_transform import SpDataTransforms
 from sp_dataset import SpDataset
+from sp_transform import SpDataTransforms
 
 
 class SpDataModule(pl.LightningDataModule):
@@ -16,11 +16,11 @@ class SpDataModule(pl.LightningDataModule):
         self,
         data_dir: str,
         batch_size: int = 128,
-        sampler: str = 'weighted',
+        sampler: str = "weighted",
         fold: int = 0,
         num_folds: int = 1,
-        val_split: float = .1,
-        test_split: float = .1,
+        val_split: float = 0.1,
+        test_split: float = 0.1,
         val_seed: int = 192873,
         test_seed: int = 4710349,
     ) -> None:
@@ -31,15 +31,17 @@ class SpDataModule(pl.LightningDataModule):
 
         # Cross Validation
         if not (0 <= fold < num_folds):
-            raise ValueError(f"Invalid fold value: {fold}. It should be in range [0, {num_folds-1}]")
+            raise ValueError(
+                f"Invalid fold value: {fold}. It should be in range [0, {num_folds-1}]"
+            )
         self.fold = fold
         self.num_folds = num_folds
 
         # Split
         self.val_split = val_split
         self.test_split = test_split
-        self.val_seed = val_seed # Should not change during cross-validation
-        self.test_seed = test_seed # Should not change during the whole analysis
+        self.val_seed = val_seed  # Should not change during cross-validation
+        self.test_seed = test_seed  # Should not change during the whole analysis
 
         self.dataset = ImageFolder(self.data_dir)
 
@@ -53,19 +55,36 @@ class SpDataModule(pl.LightningDataModule):
     def setup(self, stage: str) -> None:
         dataset_indices = list(range(len(self.dataset)))
         train_val_indices, test_indices = train_test_split(
-            dataset_indices, test_size=self.test_split, random_state=self.test_seed)
+            dataset_indices, test_size=self.test_split, random_state=self.test_seed
+        )
 
         if self.num_folds > 1:
-            kf = KFold(n_splits=self.num_folds, shuffle=True, random_state=self.val_seed)
+            print(f"Current fold: {self.fold}")
+            kf = KFold(
+                n_splits=self.num_folds, shuffle=True, random_state=self.val_seed
+            )
             splits = list(kf.split(train_val_indices))
             train_indices, val_indices = splits[self.fold]
         else:
             train_indices, val_indices = train_test_split(
-                train_val_indices, test_size=self.val_split/(1-self.test_split), random_state=self.val_seed)
+                train_val_indices,
+                test_size=self.val_split / (1 - self.test_split),
+                random_state=self.val_seed,
+            )
 
-        self.train_dataset = SpDataset(self.dataset, indices=train_indices, transform=self.transforms.train_transforms)
-        self.val_dataset = SpDataset(self.dataset, indices=val_indices, transform=self.transforms.val_transforms)
-        self.test_dataset = SpDataset(self.dataset, indices=test_indices, transform=self.transforms.test_transforms)
+        self.train_dataset = SpDataset(
+            self.dataset,
+            indices=train_indices,
+            transform=self.transforms.train_transforms,
+        )
+        self.val_dataset = SpDataset(
+            self.dataset, indices=val_indices, transform=self.transforms.val_transforms
+        )
+        self.test_dataset = SpDataset(
+            self.dataset,
+            indices=test_indices,
+            transform=self.transforms.test_transforms,
+        )
 
         self.sampler = self.get_weighted_rand_sampler()
 
