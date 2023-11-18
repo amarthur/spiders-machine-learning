@@ -19,37 +19,29 @@ class SpLightningCLI(LightningCLI):
         parser.add_lightning_class_args(EarlyStopping, "early_stopping")
         parser.add_lightning_class_args(ModelCheckpoint, "model_checkpoint")
 
-    def finish(self):
-        logger_args = self.config["fit"]["trainer"]["logger"]["init_args"]
-        config_file = "config.yaml"
-        ckpt_folder = Path(logger_args["save_dir"])
-        project_name = logger_args["project_name"]
+def cli_main(config_name):
+    get_config = lambda config_name: f'src/configs/config_{config_name}.yaml'
 
-        project_ckpts_path = ckpt_folder / project_name
-        last_folder = self.get_last_experiment_folder(project_ckpts_path)
+    with open(get_config(config_name), 'r') as file:
+        config = yaml.safe_load(file)
 
-        if last_folder:
-            config_path = ckpt_folder / config_file
-            new_config_path = last_folder / config_file
-            config_path.rename(new_config_path)
+    for i in range(config['data']['num_folds']):
+        config['data']['fold'] = i
+        cli = SpLightningCLI(
+            SpModel,
+            SpDataModule,
+            run=False,
+            args=config,
+            save_config_kwargs={"overwrite": True}
+        )
 
-    @staticmethod
-    def get_last_experiment_folder(project_ckpts_path):
-        subfolders = list(project_ckpts_path.glob("*"))
-        sorted_subfolders = sorted(subfolders, key=lambda p: p.stat().st_ctime)
-        return sorted_subfolders[-1] if sorted_subfolders else None
+        trainer = cli.trainer
+        model = cli.model
+        datamodule = cli.datamodule
+        trainer.fit(model, datamodule=datamodule)
 
+    print("Finished Training.")
 
-def cli_main():
-    cli = SpLightningCLI(
-        SpModel,
-        SpDataModule,
-        save_config_kwargs={"overwrite": True},
-    )
-    # cli.finish()
-
-def shap_main():
-    pass
 
 def objective(trial: optuna.Trial, model_name: str, epochs: int):
     get_config = lambda config_name: f'src/configs/config_{config_name}.yaml'
