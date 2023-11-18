@@ -5,7 +5,11 @@ split-folders
 PyYAML
 torch
 torchvision
-torchaudio
 torchmetrics
 pytorch-lightning[extra]
 comet-ml
+tensorboard
+torchensemble
+optuna
+black
+isort
