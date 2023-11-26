@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytorch_lightning as pl
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from torchvision.datasets import ImageFolder
@@ -21,7 +21,7 @@ class SpDataModule(pl.LightningDataModule):
         num_folds: int = 1,
         val_split: float = 0.1,
         test_split: float = 0.1,
-        val_seed: int = 192873,
+        val_seed: int = 3459782,
         test_seed: int = 4710349,
     ) -> None:
         super().__init__()
@@ -32,7 +32,7 @@ class SpDataModule(pl.LightningDataModule):
         # Cross Validation
         if not (0 <= fold < num_folds):
             raise ValueError(
-                f"Invalid fold value: {fold}. It should be in range [0, {num_folds-1}]"
+                f"Invalid fold value: {fold}. Should be in range [0, {num_folds-1}]"
             )
         self.fold = fold
         self.num_folds = num_folds
@@ -54,23 +54,37 @@ class SpDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str) -> None:
         dataset_indices = list(range(len(self.dataset)))
+
         train_val_indices, test_indices = train_test_split(
-            dataset_indices, test_size=self.test_split, random_state=self.test_seed
+            dataset_indices,
+            test_size=self.test_split,
+            random_state=self.test_seed,
+            stratify=self.dataset.targets,
         )
+        train_val_labels = [self.dataset.targets[idx] for idx in train_val_indices]
 
         if self.num_folds > 1:
             print(f"Current fold: {self.fold}")
-            kf = KFold(
+            skf = StratifiedKFold(
                 n_splits=self.num_folds, shuffle=True, random_state=self.val_seed
             )
-            splits = list(kf.split(train_val_indices))
+            splits = list(skf.split(train_val_indices, train_val_labels))
             train_indices, val_indices = splits[self.fold]
+
+            # Map indices back to the original dataset range
+            train_indices = [train_val_indices[idx] for idx in train_indices]
+            val_indices = [train_val_indices[idx] for idx in val_indices]
+
         else:
-            train_indices, val_indices = train_test_split(
-                train_val_indices,
-                test_size=self.val_split / (1 - self.test_split),
-                random_state=self.val_seed,
-            )
+            if self.val_split > 0:
+                train_indices, val_indices = train_test_split(
+                    train_val_indices,
+                    test_size=self.val_split / (1 - self.test_split),
+                    random_state=self.val_seed,
+                    stratify=train_val_labels,
+                )
+            else:
+                train_indices, val_indices = train_val_indices, []
 
         self.train_dataset = SpDataset(
             self.dataset,
@@ -78,7 +92,9 @@ class SpDataModule(pl.LightningDataModule):
             transform=self.transforms.train_transforms,
         )
         self.val_dataset = SpDataset(
-            self.dataset, indices=val_indices, transform=self.transforms.val_transforms
+            self.dataset,
+            indices=val_indices,
+            transform=self.transforms.val_transforms,
         )
         self.test_dataset = SpDataset(
             self.dataset,
@@ -89,7 +105,7 @@ class SpDataModule(pl.LightningDataModule):
         self.sampler = self.get_weighted_rand_sampler()
 
     def get_weighted_rand_sampler(self) -> WeightedRandomSampler:
-        targets = self.train_dataset.targets
+        targets = self.train_dataset.labels
         class_count = np.bincount(targets)
         class_weights = 1.0 / class_count
         sample_weights = class_weights[targets]
