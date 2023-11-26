@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
 import torch
-from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
+from torchmetrics.classification import (MulticlassAccuracy,
+                                         MulticlassConfusionMatrix,
+                                         MulticlassF1Score)
 
 import sp_models
-
-# MulticlassConfusionMatrix
 
 
 class SpModel(pl.LightningModule):
@@ -28,7 +28,7 @@ class SpModel(pl.LightningModule):
         self.val_macro_acc = MulticlassAccuracy(self.num_classes, average="macro")
         self.val_micro_acc = MulticlassAccuracy(self.num_classes, average="micro")
         self.val_macro_f1 = MulticlassF1Score(self.num_classes, average="macro")
-        # self.val_conf_mat = MulticlassConfusionMatrix(self.num_classes)
+        self.val_conf_mat = MulticlassConfusionMatrix(self.num_classes)
 
         self.test_macro_acc = MulticlassAccuracy(self.num_classes, average="macro")
         self.test_micro_acc = MulticlassAccuracy(self.num_classes, average="micro")
@@ -97,7 +97,7 @@ class SpModel(pl.LightningModule):
         loss = self.criterion(preds, y)
 
         self.log("Val Loss", loss, on_step=False, on_epoch=True, sync_dist=True)
-        # self.val_conf_mat(preds, y)
+        self.val_conf_mat(preds, y)
 
         for name, metric in self.val_metrics.items():
             metric(preds, y)
@@ -109,22 +109,18 @@ class SpModel(pl.LightningModule):
         loss = self.criterion(preds, y)
 
         self.log("Test Loss", loss, on_step=False, on_epoch=True, sync_dist=True)
-        # self.val_conf_mat(preds, y)
 
         for name, metric in self.val_metrics.items():
             metric(preds, y)
             self.log(name, metric, on_step=False, on_epoch=True, sync_dist=True)
 
-    # def log_confusion_matrix(self, phase, cf, epoch):
-    #     conf_mat = cf.compute().detach().cpu().numpy()
-    #     title = f"Confusion Matrix: {phase}"
-    #     self.logger.experiment.log_confusion_matrix(
-    #         matrix=conf_mat,
-    #         epoch=epoch,
-    #         title=title,
-    #         file_name=f"{title}.json",
-    #     )
-
-    # def on_validation_epoch_end(self):
-    #     self.log_confusion_matrix("Validation", self.val_conf_mat, self.current_epoch)
-    #     self.val_conf_mat.reset()
+    def on_validation_epoch_end(self):
+        conf_matrix = self.val_conf_mat.compute().detach().cpu().numpy()
+        if self.logger:
+            self.logger.experiment.log_confusion_matrix(
+                matrix=conf_matrix,
+                epoch=self.current_epoch,
+                title="Confusion Matrix",
+                file_name="confusion-matrix.json",
+            )
+        self.val_conf_mat.reset()
