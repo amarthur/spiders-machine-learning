@@ -12,7 +12,7 @@ class SpModel(pl.LightningModule):
         self,
         num_classes: int = None,
         model_params: dict = None,
-        criterion: torch.nn.Module = None,
+        criterion: torch.nn.Module = torch.nn.CrossEntropyLoss(),
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["criterion"])  # Save init args
@@ -33,6 +33,7 @@ class SpModel(pl.LightningModule):
         self.test_macro_acc = MulticlassAccuracy(self.num_classes, average="macro")
         self.test_micro_acc = MulticlassAccuracy(self.num_classes, average="micro")
         self.test_macro_f1 = MulticlassF1Score(self.num_classes, average="macro")
+        self.test_conf_mat = MulticlassConfusionMatrix(self.num_classes)
 
         self.train_metrics = {
             "Train Macro Accuracy": self.train_macro_acc,
@@ -110,17 +111,28 @@ class SpModel(pl.LightningModule):
 
         self.log("Test Loss", loss, on_step=False, on_epoch=True, sync_dist=True)
 
-        for name, metric in self.val_metrics.items():
+        for name, metric in self.test_metrics.items():
             metric(preds, y)
             self.log(name, metric, on_step=False, on_epoch=True, sync_dist=True)
 
-    def on_validation_epoch_end(self):
-        conf_matrix = self.val_conf_mat.compute().detach().cpu().numpy()
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        x, _ = batch
+        preds = self(x)
+        return preds
+
+    def log_conf_mat(self, conf_matrix, phase):
+        cf = conf_matrix.compute().detach().cpu().numpy()
         if self.logger:
             self.logger.experiment.log_confusion_matrix(
-                matrix=conf_matrix,
+                matrix=cf,
                 epoch=self.current_epoch,
-                title="Confusion Matrix",
-                file_name="confusion-matrix.json",
+                title=f"{phase} Confusion Matrix",
+                file_name=f"{phase}-confusion-matrix.json",
             )
-        self.val_conf_mat.reset()
+        conf_matrix.reset()
+
+    def on_validation_epoch_end(self):
+        self.log_conf_mat(self.val_conf_mat, "Val")
+
+    def on_test_epoch_end(self) -> None:
+        self.log_conf_mat(self.test_conf_mat, "Test")
