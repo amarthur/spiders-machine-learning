@@ -6,13 +6,18 @@ from sp_data import SpDataModule
 from sp_model import SpModel
 
 
-def cli_main(config_name):
-    get_config = lambda config_name: f"src/configs/config_{config_name}.yaml"
-
-    with open(get_config(config_name), "r") as file:
+def get_config(config_name: str) -> dict:
+    conf = f"src/configs/config_{config_name}.yaml"
+    with open(conf, "r") as file:
         config = yaml.safe_load(file)
+    return config
 
-    for i in range(config["data"]["num_folds"]):
+
+def cli_main(config_name: str) -> None:
+    config = get_config(config_name)
+    num_folds = config.get("data").get("num_folds", 1)
+
+    for i in range(num_folds):
         config["data"]["fold"] = i
         cli = SpLightningCLI(
             SpModel,
@@ -26,12 +31,22 @@ def cli_main(config_name):
         model = cli.model
         datamodule = cli.datamodule
         trainer.fit(model, datamodule=datamodule)
+        trainer.test(model, datamodule=datamodule)
 
     print("Finished Training.")
 
 
-if __name__ == "__main__":
-    torch.set_float32_matmul_precision("medium")
+def cli_test(ckpt):
+    from pytorch_lightning import Trainer
 
-    model_name = "convnext"
-    cli_main(model_name)
+    model = SpModel.load_from_checkpoint(ckpt)
+    datamodule = SpDataModule("Databases/DB_TOP25")
+
+    trainer = Trainer(accelerator="gpu", devices=1, num_nodes=1, logger=False)
+    trainer.test(model, datamodule=datamodule)
+
+    print("Finished Testing.")
+
+
+if __name__ == "__main__":
+    torch.set_float32_matmul_precision("high")
