@@ -62,3 +62,19 @@ class SpDataTransforms:
     @property
     def test_transforms(self):
         return self._test_transforms
+
+    @property
+    def tensor_transform(self):
+        return transforms.Compose(
+            [
+                transforms.Resize(size=self.resize),
+                transforms.CenterCrop(size=self.center_crop),
+                transforms.ToTensor(),
+            ]
+        )
+
+    @property
+    def normalize_transform(self):
+        return transforms.Normalize(
+            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+        )
