@@ -52,19 +52,19 @@ class SpDataTransforms:
         )
 
     @property
-    def train_transforms(self):
+    def train_transforms(self) -> transforms.Compose:
         return self._train_transforms
 
     @property
-    def val_transforms(self):
+    def val_transforms(self) -> transforms.Compose:
         return self._val_transforms
 
     @property
-    def test_transforms(self):
+    def test_transforms(self) -> transforms.Compose:
         return self._test_transforms
 
     @property
-    def tensor_transform(self):
+    def tensor_transform(self) -> transforms.Compose:
         return transforms.Compose(
             [
                 transforms.Resize(size=self.resize),
@@ -74,7 +74,5 @@ class SpDataTransforms:
         )
 
     @property
-    def normalize_transform(self):
-        return transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )
+    def normalize_transform(self) -> transforms.Normalize:
+        return transforms.Normalize(mean=self.mean, std=self.std)

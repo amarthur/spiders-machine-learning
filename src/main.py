@@ -31,7 +31,6 @@ def cli_main(config_name: str) -> None:
         model = cli.model
         datamodule = cli.datamodule
         trainer.fit(model, datamodule=datamodule)
-        trainer.test(model, datamodule=datamodule)
 
     print("Finished Training.")
 
