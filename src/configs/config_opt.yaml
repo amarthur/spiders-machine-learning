@@ -1,0 +1,29 @@
+trainer:
+  accelerator: "gpu"
+  devices: 1
+  logger: False
+model:
+    num_classes: 25
+    criterion:
+      class_path: torch.nn.CrossEntropyLoss
+      init_args:
+        reduction: mean
+data:
+  data_dir: "Databases/DB_TOP25"
+  sampler: "weighted"
+  batch_size: 128
+  num_folds: 1
+  val_split: .18
+  val_seed: Null
+optimizer:
+  class_path: Null
+  init_args: {}
+lr_scheduler:
+  class_path: Null
+  init_args: {}
+early_stopping:
+  monitor: 'Val Loss'
+  patience: 6
+  mode: 'min'
+model_checkpoint:
+  save_top_k: 0
