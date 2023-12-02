@@ -1,14 +1,17 @@
-# Images
+# Files
 *.[pP][nN][gG]
 *.[jJ][pP][gG]
 *.[jJ][pP][eE][gG]
 *.[yY][aA][mM][lL]
+*.out
+*garbage*
 
 # Folders
-*logs/
+*[Ss]tudies/
+*[Cc]kpts/
+*[Ll]ogs/
 *Documents/
 *Database*/
-*Dataset*/
 *[Aa]rchive/
 *[Mm]isc/
 *[Ww]eights*/

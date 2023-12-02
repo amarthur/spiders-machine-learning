@@ -6,12 +6,12 @@ CONFIG := src/configs
 VENV := venv
 VENV_ACTIVATE = source $(VENV)/bin/activate
 
-all: fit
+all: run
 
-fit:
+run:
 	(clear && \
 	$(VENV_ACTIVATE) && \
-	$(PYTHON) $(SRC)/main.py fit --config $(CONFIG)/config.yaml)
+	$(PYTHON) $(SRC)/main.py)
 
 setup: venv_create venv_install
 
@@ -22,3 +22,6 @@ venv_install:
 	($(VENV_ACTIVATE) && \
 	$(PIP) install --upgrade pip && \
 	$(PIP) install -r requirements.txt)
+
+clean:
+	rm -r $(VENV)
