@@ -1,0 +1,48 @@
+trainer:
+  accelerator: "gpu"
+  devices: 2
+  strategy: "ddp"
+  logger:
+    class_path: pytorch_lightning.loggers.CometLogger
+    init_args:
+      api_key: 'atomically_small_spiders'
+      workspace: 'boringly_normal_spiders'
+      project_name: 'astronomically_huge_spiders'
+      save_dir: &save_dir "ckpts/Resnet"
+  max_epochs: 30
+model:
+    num_classes: 25
+    model_params:
+      model_type: "resnet"
+      architecture: "resnet50"
+      unfreeze_layers:
+        - "layer4"
+      weights: "DEFAULT"
+    criterion:
+      class_path: torch.nn.CrossEntropyLoss
+      init_args:
+        reduction: mean
+data:
+  data_dir: "Databases/DB_TOP25"
+  batch_size: 128
+  sampler: "weighted"
+  fold: 0
+  num_folds: 5
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.00121
+    weight_decay: 0.00017
+lr_scheduler:
+  class_path: torch.optim.lr_scheduler.ExponentialLR
+  init_args:
+    gamma: 0.68445
+model_checkpoint:
+  dirpath: *save_dir
+  monitor: "Val Macro Accuracy"
+  mode: "max"
+  filename: "{epoch}-{Val Macro Accuracy:.2f}"
+early_stopping:
+  monitor: 'Val Loss'
+  patience: 10
+  mode: 'min'

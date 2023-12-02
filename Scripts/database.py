@@ -4,14 +4,16 @@ from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from directory_structure import DirectoryStructure
 from PIL import Image
 
 
 class Database:
-
-    def __init__(self, csv_file: str, database_name="Database", imgs_threshold=100, processes=64):
+    def __init__(
+        self, csv_file: str, database_name="Database", imgs_threshold=100, processes=64
+    ):
         # Parameters
         self.csv_file = csv_file
         self.database_name = database_name
@@ -30,13 +32,15 @@ class Database:
         self.img_path = "image_path"
         self.scientific_name = "scientific_name"
 
-    def create_database(self,
-                        save_images: bool = False,
-                        with_license: bool = True,
-                        check_images: bool = True,
-                        print_info: bool = False,
-                        database_csv_name: str = None,
-                        plot_name: str = None):
+    def create_database(
+        self,
+        save_images: bool = False,
+        with_license: bool = True,
+        check_images: bool = True,
+        print_info: bool = False,
+        database_csv_name: str = None,
+        plot_name: str = None,
+    ):
         # Get data
         df, info = self.get_data(with_license)
 
@@ -48,7 +52,9 @@ class Database:
 
         # Download images
         species_groups = df.groupby(self.scientific_name)
-        groups_df = [self.get_group_data(species_group) for _, species_group in species_groups]
+        groups_df = [
+            self.get_group_data(species_group) for _, species_group in species_groups
+        ]
         images_df = pd.concat(groups_df, axis=0)
 
         if save_images:
@@ -87,10 +93,16 @@ class Database:
 
         # Remove invalid formats
         valid_img_formats = [".png", ".jpg", ".jpeg"]
-        df = df[df[self.img_url].apply(lambda x: Path(x).suffix.lower() in valid_img_formats)]
+        df = df[
+            df[self.img_url].apply(
+                lambda x: Path(x).suffix.lower() in valid_img_formats
+            )
+        ]
 
         # Remove species below threshold
-        df = df.groupby(self.scientific_name).filter(lambda x: len(x) >= self.imgs_threshold)
+        df = df.groupby(self.scientific_name).filter(
+            lambda x: len(x) >= self.imgs_threshold
+        )
         info["Nº imgs after removing species below threshold"] = len(df)
 
         # Get number of classes
@@ -115,11 +127,16 @@ class Database:
 
         # Define image names and paths
         group_data[self.img_name] = image_name + "_" + i + ext
-        group_data[self.img_path] = group_data[self.img_name].apply(lambda x: self.dirs.database_dir / species_name / x)
+        group_data[self.img_path] = group_data[self.img_name].apply(
+            lambda x: self.dirs.database_dir / species_name / x
+        )
         return group_data
 
     def save_images(self, df):
-        urls_paths = [(url, path) for url, path in zip(df[self.img_url], df[self.img_path])]
+        urls_paths = [
+            (url, path)
+            for url, path in zip(df[self.img_url], df[self.img_path], strict=True)
+        ]
         self.multiprocess(self.download_image, urls_paths)
 
     def check_images(self, paths):
@@ -133,13 +150,24 @@ class Database:
 
     def create_csv(self, df, database_csv_name):
         database_csv_path = self.dirs.database_dir / database_csv_name
-        columns = [self.id, self.license, self.img_name, self.scientific_name, self.img_url]
+        columns = [
+            self.id,
+            self.license,
+            self.img_name,
+            self.scientific_name,
+            self.img_url,
+        ]
         df.to_csv(database_csv_path, columns=columns, index=False)
 
     def plot_distribution_graph(self, df, plot_name):
-        species_distribution = df[self.scientific_name].value_counts().sort_values(ascending=False)
-        species_distribution.plot(kind='bar', figsize=(10, 10))
-        plt.grid(axis='y', linestyle='--', color='grey')
+        species_distribution = (
+            df[self.scientific_name].value_counts().sort_values(ascending=False)
+        )
+        species_distribution.plot(kind="bar", figsize=(10, 10))
+        plt.grid(axis="y", linestyle="--", color="grey")
+        plt.axhline(y=500, color="gray", linestyle="--", linewidth=0.5)
+        plt.subplots_adjust(bottom=0.6)
+        plt.yticks(np.arange(0, 4501, 500))
         plt.subplots_adjust(bottom=0.25)
 
         plt.xlabel("Nome Científico")
@@ -165,7 +193,7 @@ class Database:
 
         for attempt in range(3):
             try:
-                urllib.request.urlretrieve(url, img_path)
+                urllib.request.urlretrieve(url, img_path)  # nosec
             except Exception as e:
                 print(f"{url}: {e}")
                 time.sleep(attempt)
@@ -183,7 +211,8 @@ class Database:
 
 
 def main():
-    db = Database(csv_file="example.csv")
+    db = Database(csv_file="spiders.csv")
+    db.create_database(with_license=False, check_images=False, plot_name="All.png")
 
 
 if __name__ == "__main__":
